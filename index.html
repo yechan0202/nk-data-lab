@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>NK Data Lab</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; }
     h1 { color: #222; }
@@ -25,17 +27,20 @@
 
 <div class="section">
   <h2>Sanctions Timeline Panel (2006–Present)</h2>
-  <p>Monthly coded UN sanctions resolutions affecting DPRK.</p>
+  <p>Monthly coded UN Security Council sanctions resolutions affecting DPRK. Each row is sourced from the UN 1718 Sanctions Committee resolutions list (see link column).</p>
 
   <div class="controls">
     <select id="filter-year"><option value="">Year</option></select>
     <input id="filter-resolution" placeholder="Resolution (e.g., 2397)" />
-    <input id="search" placeholder="Search text" />
+    <input id="search" placeholder="Search text (e.g., oil)" />
     <button id="reset" type="button">Reset</button>
   </div>
 
   <div class="card">
     <table id="table"></table>
+  </div>
+  <div class="card">
+    <small>Data file: <a href="data/sanctions_timeline_panel.csv">sanctions_timeline_panel.csv</a></small>
   </div>
 </div>
 
@@ -76,18 +81,22 @@
 
 <script>
 async function load() {
-  const resp = await fetch('data/sanctions_timeline_panel.csv');
-  const text = await resp.text();
-  const rows = text.trim().split(/\r?\n/).map(r => r.split(','));
-  const headers = rows.shift();
-  const data = rows.map(r => {
-    const obj = {};
-    headers.forEach((h,i)=>obj[h]=r[i]);
-    return obj;
-  });
-  window._data = data;
-  setupFilters(data);
-  render(data);
+  try {
+    const resp = await fetch('data/sanctions_timeline_panel.csv');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const parsed = Papa.parse(text, {header: true, skipEmptyLines: true});
+    if (parsed.errors && parsed.errors.length) {
+      console.warn('CSV parse errors:', parsed.errors.slice(0, 5));
+    }
+    const data = parsed.data.filter(row => row.year);
+    window._data = data;
+    setupFilters(data);
+    render(data);
+  } catch (err) {
+    document.getElementById('table').innerHTML = '<tbody><tr><td colspan="7">Failed to load dataset: ' + err.message + '</td></tr></tbody>';
+    console.error(err);
+  }
 }
 
 function setupFilters(data) {
@@ -98,12 +107,14 @@ function setupFilters(data) {
     o.value = o.textContent = y;
     yearSel.appendChild(o);
   });
+
   document.getElementById('reset').onclick = () => {
     yearSel.value = '';
     document.getElementById('filter-resolution').value = '';
     document.getElementById('search').value = '';
     render(window._data);
   };
+
   yearSel.onchange = apply;
   document.getElementById('filter-resolution').oninput = apply;
   document.getElementById('search').oninput = apply;
@@ -113,9 +124,10 @@ function apply() {
   const year = document.getElementById('filter-year').value;
   const res = document.getElementById('filter-resolution').value.trim().toLowerCase();
   const q = document.getElementById('search').value.trim().toLowerCase();
+
   let d = window._data;
   if (year) d = d.filter(x => x.year === year);
-  if (res) d = d.filter(x => x.resolution.toLowerCase().includes(res));
+  if (res) d = d.filter(x => (x.resolution || '').toLowerCase().includes(res));
   if (q) d = d.filter(x => Object.values(x).some(v => String(v).toLowerCase().includes(q)));
   render(d);
 }
@@ -123,10 +135,11 @@ function apply() {
 function render(data) {
   const table = document.getElementById('table');
   table.innerHTML = '';
-  const headers = ['year','month','resolution','sanction_type','target_sector','new_or_expansion','source_url'];
+
+  const headers = ['year', 'month', 'resolution', 'sanction_type', 'target_sector', 'new_or_expansion', 'source_url'];
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
-  headers.forEach(h=>{
+  headers.forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
     trh.appendChild(th);
@@ -135,18 +148,19 @@ function render(data) {
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  data.forEach(row=>{
+  data.forEach(row => {
     const tr = document.createElement('tr');
-    headers.forEach(h=>{
+    headers.forEach(h => {
       const td = document.createElement('td');
+      const val = row[h] || '';
       if (h === 'source_url') {
         const a = document.createElement('a');
-        a.href = row[h];
+        a.href = val;
         a.textContent = 'link';
         a.target = '_blank';
         td.appendChild(a);
       } else {
-        td.textContent = row[h];
+        td.textContent = val;
       }
       tr.appendChild(td);
     });
