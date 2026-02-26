@@ -21,156 +21,175 @@
   </style>
 </head>
 <body>
-
 <h1>North Korea Data Lab</h1>
 <p>Interactive access to structured datasets on DPRK sanctions, diplomacy, and related domains.</p>
 
 <div class="section">
   <h2>Sanctions Timeline Panel (2006–Present)</h2>
-  <p>Monthly coded UN Security Council sanctions resolutions affecting DPRK. Each row is sourced from the UN 1718 Sanctions Committee resolutions list (see link column).</p>
-
+  <p>Monthly coded UN Security Council sanctions resolutions affecting DPRK (in-browser filterable table). Each row is sourced from the UN 1718 Sanctions Committee resolutions list (see link column).</p>
   <div class="controls">
     <select id="filter-year"><option value="">Year</option></select>
     <input id="filter-resolution" placeholder="Resolution (e.g., 2397)" />
     <input id="search" placeholder="Search text (e.g., oil)" />
     <button id="reset" type="button">Reset</button>
   </div>
-
-  <div class="card">
-    <table id="table"></table>
-  </div>
-  <div class="card">
-    <small>Data file: <a href="data/sanctions_timeline_panel.csv">sanctions_timeline_panel.csv</a></small>
-  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Month</th>
+        <th>Resolution</th>
+        <th>Sanction type</th>
+        <th>Target sector</th>
+        <th>New/expansion</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr><td colspan="7">Loading...</td></tr>
+    </tbody>
+  </table>
+  <p><small>Source: <a href="https://www.un.org/securitycouncil/sanctions/1718/resolutions">UN Security Council 1718 Sanctions Committee resolutions list</a>.</small></p>
 </div>
 
 <div class="section">
-  <h2>Other datasets (under construction)</h2>
-  <div class="card">
-    <strong>Trade (UN Comtrade)</strong><br/>
-    <small>Import/export flows (DPRK) for time series analysis.</small>
-  </div>
-  <div class="card">
-    <strong>Night-time lights (NOAA VIIRS)</strong><br/>
-    <small>Night-light intensity as proxy for economic activity and infrastructure.</small>
-  </div>
-  <div class="card">
-    <strong>Missile launches (CSIS Missile Threat)</strong><br/>
-    <small>Event-level launch database.</small>
-  </div>
-  <div class="card">
-    <strong>Humanitarian financing (OCHA FTS)</strong><br/>
-    <small>Humanitarian funding flows by year.</small>
-  </div>
-</div>
-
-<div class="section">
-  <h2>Source links</h2>
+  <h2>Other data sources (to be integrated next)</h2>
   <ul>
-    <li><a href="https://www.un.org/securitycouncil/sanctions/1718/materials">UN 1718 Sanctions Committee materials</a></li>
-    <li><a href="https://www.un.org/securitycouncil/sanctions/1718/panel-of-experts/reports">UN Panel of Experts on DPRK reports</a></li>
-    <li><a href="https://ofac.treasury.gov/sanctions-programs-and-country-information/north-korea-sanctions">US OFAC North Korea sanctions</a></li>
-    <li><a href="https://www.sanctionsmap.eu/#/main/details/17">EU sanctions map (DPRK)</a></li>
-    <li><a href="https://www.gov.uk/government/publications/the-uk-sanctions-list">UK sanctions list</a></li>
-    <li><a href="https://comtrade.un.org/">UN Comtrade</a></li>
-    <li><a href="https://eogdata.mines.edu/nighttime_light/">NOAA VIIRS night-time lights</a></li>
-    <li><a href="https://missilethreat.csis.org/country/dprk/">CSIS Missile Threat</a></li>
-    <li><a href="https://fts.unocha.org/">OCHA FTS</a></li>
+    <li>Trade: UN Comtrade (DPRK trade flows)</li>
+    <li>Night lights: VIIRS (NOAA)</li>
+    <li>Military launches: CSIS Missile Threat</li>
+    <li>Humanitarian finance: UN OCHA / FTS</li>
   </ul>
 </div>
 
 <script>
-async function load() {
-  try {
-    const resp = await fetch('data/sanctions_timeline_panel.csv');
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const parsed = Papa.parse(text, {header: true, skipEmptyLines: true});
-    if (parsed.errors && parsed.errors.length) {
-      console.warn('CSV parse errors:', parsed.errors.slice(0, 5));
-    }
-    const data = parsed.data.filter(row => row.year);
-    window._data = data;
-    setupFilters(data);
-    render(data);
-  } catch (err) {
-    document.getElementById('table').innerHTML = '<tbody><tr><td colspan="7">Failed to load dataset: ' + err.message + '</td></tr></tbody>';
-    console.error(err);
+function normalizeKey(k){
+  return k ? k.replace(/^﻿/, '').trim().toLowerCase() : '';
+}
+
+function normalizeRow(raw){
+  const out = {};
+  for (const key in raw){
+    const nk = normalizeKey(key);
+    out[nk] = (raw[key] ?? '').toString().trim();
+  }
+  return out;
+}
+
+function safeString(v){
+  return v === undefined || v === null ? '' : String(v);
+}
+
+function containsText(haystack, needle){
+  haystack = safeString(haystack).toLowerCase();
+  needle = safeString(needle).toLowerCase();
+  return haystack.includes(needle);
+}
+
+const yearSelect = document.getElementById('filter-year');
+const resInput = document.getElementById('filter-resolution');
+const searchInput = document.getElementById('search');
+const resetBtn = document.getElementById('reset');
+const tbody = document.getElementById('table-body');
+
+let data = [];
+let yearList = [];
+
+function render(rows){
+  tbody.innerHTML = '';
+  if (rows.length === 0){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.textContent = 'No matches.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  for (const row of rows){
+    const tr = document.createElement('tr');
+    const link = row.source_url ? `<a href="${row.source_url}">link</a>` : '';
+    tr.innerHTML = `
+      <td>${row.year}</td>
+      <td>${row.month}</td>
+      <td>${row.resolution}</td>
+      <td>${row.sanction_type}</td>
+      <td>${row.target_sector}</td>
+      <td>${row.new_or_expansion}</td>
+      <td>${link}</td>
+    `;
+    tbody.appendChild(tr);
   }
 }
 
-function setupFilters(data) {
-  const yearSel = document.getElementById('filter-year');
-  const years = Array.from(new Set(data.map(d => d.year))).sort();
-  years.forEach(y => {
-    const o = document.createElement('option');
-    o.value = o.textContent = y;
-    yearSel.appendChild(o);
+function applyFilters(){
+  const year = yearSelect.value;
+  const res = resInput.value.trim();
+  const q = searchInput.value.trim();
+
+  const rows = data.filter((row) => {
+    if (year && row.year !== year) return false;
+    if (res && !containsText(row.resolution, res)) return false;
+    if (q){
+      const hay = `${row.sanction_type} ${row.target_sector} ${row.new_or_expansion} ${row.resolution}`;
+      if (!containsText(hay, q)) return false;
+    }
+    return true;
   });
 
-  document.getElementById('reset').onclick = () => {
-    yearSel.value = '';
-    document.getElementById('filter-resolution').value = '';
-    document.getElementById('search').value = '';
-    render(window._data);
-  };
-
-  yearSel.onchange = apply;
-  document.getElementById('filter-resolution').oninput = apply;
-  document.getElementById('search').oninput = apply;
+  render(rows);
 }
 
-function apply() {
-  const year = document.getElementById('filter-year').value;
-  const res = document.getElementById('filter-resolution').value.trim().toLowerCase();
-  const q = document.getElementById('search').value.trim().toLowerCase();
-
-  let d = window._data;
-  if (year) d = d.filter(x => x.year === year);
-  if (res) d = d.filter(x => (x.resolution || '').toLowerCase().includes(res));
-  if (q) d = d.filter(x => Object.values(x).some(v => String(v).toLowerCase().includes(q)));
-  render(d);
+function initYearOptions(){
+  yearSelect.innerHTML = '<option value="">Year</option>';
+  yearList.sort((a,b)=>a-b);
+  for (const y of yearList){
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = String(y);
+    yearSelect.appendChild(opt);
+  }
 }
 
-function render(data) {
-  const table = document.getElementById('table');
-  table.innerHTML = '';
-
-  const headers = ['year', 'month', 'resolution', 'sanction_type', 'target_sector', 'new_or_expansion', 'source_url'];
-  const thead = document.createElement('thead');
-  const trh = document.createElement('tr');
-  headers.forEach(h => {
-    const th = document.createElement('th');
-    th.textContent = h;
-    trh.appendChild(th);
-  });
-  thead.appendChild(trh);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  data.forEach(row => {
-    const tr = document.createElement('tr');
-    headers.forEach(h => {
-      const td = document.createElement('td');
-      const val = row[h] || '';
-      if (h === 'source_url') {
-        const a = document.createElement('a');
-        a.href = val;
-        a.textContent = 'link';
-        a.target = '_blank';
-        td.appendChild(a);
-      } else {
-        td.textContent = val;
-      }
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
+function ingestRows(rawRows){
+  const out = [];
+  const yearSet = new Set();
+  for (const raw of rawRows){
+    const row = normalizeRow(raw);
+    if (!row.year) continue;
+    const yr = parseInt(row.year, 10);
+    if (!Number.isNaN(yr)) yearSet.add(yr);
+    out.push(row);
+  }
+  yearList = Array.from(yearSet);
+  return out;
 }
 
-load();
+Papa.parse('data/sanctions_timeline_panel.csv', {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: (results) => {
+    data = ingestRows(results.data);
+    initYearOptions();
+    applyFilters();
+  },
+  error: (err) => {
+    tbody.innerHTML = '<tr><td colspan="7">Failed to load CSV.</td></tr>';
+    console.error(err);
+  },
+});
+
+yearSelect.addEventListener('change', applyFilters);
+resInput.addEventListener('input', applyFilters);
+searchInput.addEventListener('input', applyFilters);
+resetBtn.addEventListener('click', () => {
+  yearSelect.value = '';
+  resInput.value = '';
+  searchInput.value = '';
+  applyFilters();
+});
 </script>
-
 </body>
 </html>
