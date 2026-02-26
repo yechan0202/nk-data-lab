@@ -1,1 +1,24 @@
 year,month,resolution,sanction_type,target_sector,new_or_expansion,source_url
+2006,10,S/RES/1718 (2006),arms_embargo;multipronged,multi,new,https://undocs.org/S/RES/1718%282006%29
+2009,6,S/RES/1874 (2009),expanded_sanctions,finance;multipronged,expansion,https://undocs.org/S/RES/1874%282009%29
+2010,6,S/RES/1928 (2010),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/1928%282010%29
+2011,6,S/RES/1985 (2011),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/1985%282011%29
+2012,6,S/RES/2050 (2012),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2050%282012%29
+2013,1,S/RES/2087 (2013),designations;enforcement,maritime;multipronged,expansion,https://undocs.org/S/RES/2087%282013%29
+2013,3,S/RES/2094 (2013),targeted_financial_sanctions,finance,expansion,https://undocs.org/S/RES/2094%282013%29
+2014,3,S/RES/2141 (2014),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2141%282014%29
+2015,3,S/RES/2207 (2015),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2207%282015%29
+2016,3,S/RES/2270 (2016),sectoral;cargo_inspection;financial,coal_minerals;maritime;finance,expansion,https://undocs.org/S/RES/2270%282016%29
+2016,3,S/RES/2276 (2016),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2276%282016%29
+2016,11,S/RES/2321 (2016),arms_embargo_expansion;cargo_inspection,arms;maritime,expansion,https://undocs.org/S/RES/2321%282016%29
+2017,3,S/RES/2345 (2017),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2345%282017%29
+2017,6,S/RES/2356 (2017),designations,individuals_entities,expansion,https://undocs.org/S/RES/2356%282017%29
+2017,8,S/RES/2371 (2017),sectoral;maritime,coal_minerals;seafood;maritime,expansion,https://undocs.org/S/RES/2371%282017%29
+2017,9,S/RES/2375 (2017),oil_refined_cap;textiles;labor,refined_petroleum;textiles;labor,expansion,https://undocs.org/S/RES/2375%282017%29
+2017,12,S/RES/2397 (2017),refined_petroleum_reduction;crude_cap;work_permits,oil;labor;maritime,expansion,https://undocs.org/S/RES/2397%282017%29
+2018,3,S/RES/2407 (2018),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2407%282018%29
+2019,4,S/RES/2464 (2019),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2464%282019%29
+2020,3,S/RES/2515 (2020),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2515%282020%29
+2021,3,S/RES/2569 (2021),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2569%282021%29
+2022,3,S/RES/2627 (2022),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2627%282022%29
+2023,3,S/RES/2680 (2023),PoE_mandate_extension,monitoring,extension,https://undocs.org/S/RES/2680%282023%29
